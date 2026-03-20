@@ -1,4 +1,4 @@
-#include "xenia/hid/xinput/kinect_hid.h"
+#include "xenia/hid/kinect/kinect_hid.h"
 
 #include "xenia/hid/kinect/kinect_input_driver.h"
 
