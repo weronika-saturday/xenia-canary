@@ -19,14 +19,15 @@
 // Platform-specific dynamic loading.
 #if XE_PLATFORM_WIN32
 #include "xenia/base/platform_win.h"
-#define XE_DLOPEN(name)        reinterpret_cast<void*>(LoadLibraryA(name))
-#define XE_DLSYM(mod, sym)     reinterpret_cast<void*>(GetProcAddress(reinterpret_cast<HMODULE>(mod), sym))
-#define XE_DLCLOSE(mod)        FreeLibrary(reinterpret_cast<HMODULE>(mod))
+#define XE_DLOPEN(name) reinterpret_cast<void*>(LoadLibraryA(name))
+#define XE_DLSYM(mod, sym) \
+  reinterpret_cast<void*>(GetProcAddress(reinterpret_cast<HMODULE>(mod), sym))
+#define XE_DLCLOSE(mod) FreeLibrary(reinterpret_cast<HMODULE>(mod))
 #else
 #include <dlfcn.h>
-#define XE_DLOPEN(name)        dlopen(name, RTLD_LAZY | RTLD_LOCAL)
-#define XE_DLSYM(mod, sym)     dlsym(mod, sym)
-#define XE_DLCLOSE(mod)        dlclose(mod)
+#define XE_DLOPEN(name) dlopen(name, RTLD_LAZY | RTLD_LOCAL)
+#define XE_DLSYM(mod, sym) dlsym(mod, sym)
+#define XE_DLCLOSE(mod) dlclose(mod)
 #endif
 
 namespace xe {
@@ -37,46 +38,46 @@ namespace kinect {
 // T-pose offsets relative to hip-center (metres, skeleton space).
 // ---------------------------------------------------------------------------
 static constexpr float kTPose[kNuiSkeletonPositionCount][3] = {
-    { 0.00f,  0.00f,  0.00f},  // HIP_CENTER
-    { 0.00f,  0.20f,  0.00f},  // SPINE
-    { 0.00f,  0.40f,  0.00f},  // SHOULDER_CENTER
-    { 0.00f,  0.60f,  0.00f},  // HEAD
-    {-0.22f,  0.40f,  0.00f},  // SHOULDER_LEFT
-    {-0.45f,  0.40f,  0.00f},  // ELBOW_LEFT
-    {-0.57f,  0.40f,  0.00f},  // WRIST_LEFT   (interpolated)
-    {-0.76f,  0.40f,  0.00f},  // HAND_LEFT
-    { 0.22f,  0.40f,  0.00f},  // SHOULDER_RIGHT
-    { 0.45f,  0.40f,  0.00f},  // ELBOW_RIGHT
-    { 0.57f,  0.40f,  0.00f},  // WRIST_RIGHT  (interpolated)
-    { 0.76f,  0.40f,  0.00f},  // HAND_RIGHT
-    {-0.12f,  0.00f,  0.00f},  // HIP_LEFT
-    {-0.12f, -0.42f,  0.00f},  // KNEE_LEFT
-    {-0.12f, -0.61f,  0.00f},  // ANKLE_LEFT   (interpolated)
-    {-0.12f, -0.90f,  0.08f},  // FOOT_LEFT
-    { 0.12f,  0.00f,  0.00f},  // HIP_RIGHT
-    { 0.12f, -0.42f,  0.00f},  // KNEE_RIGHT
-    { 0.12f, -0.61f,  0.00f},  // ANKLE_RIGHT  (interpolated)
-    { 0.12f, -0.90f,  0.08f},  // FOOT_RIGHT
+    {0.00f, 0.00f, 0.00f},    // HIP_CENTER
+    {0.00f, 0.20f, 0.00f},    // SPINE
+    {0.00f, 0.40f, 0.00f},    // SHOULDER_CENTER
+    {0.00f, 0.60f, 0.00f},    // HEAD
+    {-0.22f, 0.40f, 0.00f},   // SHOULDER_LEFT
+    {-0.45f, 0.40f, 0.00f},   // ELBOW_LEFT
+    {-0.57f, 0.40f, 0.00f},   // WRIST_LEFT   (interpolated)
+    {-0.76f, 0.40f, 0.00f},   // HAND_LEFT
+    {0.22f, 0.40f, 0.00f},    // SHOULDER_RIGHT
+    {0.45f, 0.40f, 0.00f},    // ELBOW_RIGHT
+    {0.57f, 0.40f, 0.00f},    // WRIST_RIGHT  (interpolated)
+    {0.76f, 0.40f, 0.00f},    // HAND_RIGHT
+    {-0.12f, 0.00f, 0.00f},   // HIP_LEFT
+    {-0.12f, -0.42f, 0.00f},  // KNEE_LEFT
+    {-0.12f, -0.61f, 0.00f},  // ANKLE_LEFT   (interpolated)
+    {-0.12f, -0.90f, 0.08f},  // FOOT_LEFT
+    {0.12f, 0.00f, 0.00f},    // HIP_RIGHT
+    {0.12f, -0.42f, 0.00f},   // KNEE_RIGHT
+    {0.12f, -0.61f, 0.00f},   // ANKLE_RIGHT  (interpolated)
+    {0.12f, -0.90f, 0.08f},   // FOOT_RIGHT
 };
 
 // NiTE2 joint index → Xbox 360 joint index mapping.
 // -1 means the Xbox joint is derived (interpolated), not directly mapped.
 static constexpr int kNiTE2ToXbox[15] = {
-  NUI_JOINT_HEAD,             // NiTE JOINT_HEAD
-  NUI_JOINT_SHOULDER_CENTER,  // NiTE JOINT_NECK
-  NUI_JOINT_SHOULDER_LEFT,    // NiTE JOINT_LEFT_SHOULDER
-  NUI_JOINT_SHOULDER_RIGHT,   // NiTE JOINT_RIGHT_SHOULDER
-  NUI_JOINT_ELBOW_LEFT,       // NiTE JOINT_LEFT_ELBOW
-  NUI_JOINT_ELBOW_RIGHT,      // NiTE JOINT_RIGHT_ELBOW
-  NUI_JOINT_HAND_LEFT,        // NiTE JOINT_LEFT_HAND
-  NUI_JOINT_HAND_RIGHT,       // NiTE JOINT_RIGHT_HAND
-  NUI_JOINT_SPINE,            // NiTE JOINT_TORSO
-  NUI_JOINT_HIP_LEFT,         // NiTE JOINT_LEFT_HIP
-  NUI_JOINT_HIP_RIGHT,        // NiTE JOINT_RIGHT_HIP
-  NUI_JOINT_KNEE_LEFT,        // NiTE JOINT_LEFT_KNEE
-  NUI_JOINT_KNEE_RIGHT,       // NiTE JOINT_RIGHT_KNEE
-  NUI_JOINT_FOOT_LEFT,        // NiTE JOINT_LEFT_FOOT
-  NUI_JOINT_FOOT_RIGHT,       // NiTE JOINT_RIGHT_FOOT
+    NUI_JOINT_HEAD,            // NiTE JOINT_HEAD
+    NUI_JOINT_SHOULDER_CENTER, // NiTE JOINT_NECK
+    NUI_JOINT_SHOULDER_LEFT,   // NiTE JOINT_LEFT_SHOULDER
+    NUI_JOINT_SHOULDER_RIGHT,  // NiTE JOINT_RIGHT_SHOULDER
+    NUI_JOINT_ELBOW_LEFT,      // NiTE JOINT_LEFT_ELBOW
+    NUI_JOINT_ELBOW_RIGHT,     // NiTE JOINT_RIGHT_ELBOW
+    NUI_JOINT_HAND_LEFT,       // NiTE JOINT_LEFT_HAND
+    NUI_JOINT_HAND_RIGHT,      // NiTE JOINT_RIGHT_HAND
+    NUI_JOINT_SPINE,           // NiTE JOINT_TORSO
+    NUI_JOINT_HIP_LEFT,        // NiTE JOINT_LEFT_HIP
+    NUI_JOINT_HIP_RIGHT,       // NiTE JOINT_RIGHT_HIP
+    NUI_JOINT_KNEE_LEFT,       // NiTE JOINT_LEFT_KNEE
+    NUI_JOINT_KNEE_RIGHT,      // NiTE JOINT_RIGHT_KNEE
+    NUI_JOINT_FOOT_LEFT,       // NiTE JOINT_LEFT_FOOT
+    NUI_JOINT_FOOT_RIGHT,      // NiTE JOINT_RIGHT_FOOT
 };
 
 // ---------------------------------------------------------------------------

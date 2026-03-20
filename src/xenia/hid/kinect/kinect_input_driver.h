@@ -76,15 +76,15 @@ constexpr uint32_t kNuiSkeletonCount         = 6;
 constexpr uint32_t kNuiSkeletonPositionCount = 20;
 
 enum X_NUI_SKELETON_TRACKING_STATE : uint32_t {
-  X_NUI_SKELETON_NOT_TRACKED   = 0,
+  X_NUI_SKELETON_NOT_TRACKED = 0,
   X_NUI_SKELETON_POSITION_ONLY = 1,
-  X_NUI_SKELETON_TRACKED       = 2,
+  X_NUI_SKELETON_TRACKED = 2,
 };
 
 enum X_NUI_SKELETON_POSITION_TRACKING_STATE : uint32_t {
   X_NUI_SKELETON_POSITION_NOT_TRACKED = 0,
-  X_NUI_SKELETON_POSITION_INFERRED    = 1,
-  X_NUI_SKELETON_POSITION_TRACKED     = 2,
+  X_NUI_SKELETON_POSITION_INFERRED = 1,
+  X_NUI_SKELETON_POSITION_TRACKED = 2,
 };
 
 // Joint indices — same order as Windows Kinect SDK 1.x / XDK.
@@ -123,12 +123,12 @@ struct X_NUI_SKELETON_DATA {
   X_VECTOR4 Position;
   X_VECTOR4 SkeletonPositions[kNuiSkeletonPositionCount];
   X_NUI_SKELETON_POSITION_TRACKING_STATE
-      eSkeletonPositionTrackingState[kNuiSkeletonPositionCount];
+  eSkeletonPositionTrackingState[kNuiSkeletonPositionCount];
   uint32_t dwQualityFlags;
 };
 
 struct X_NUI_SKELETON_FRAME {
-  int64_t  liTimeStamp;
+  int64_t liTimeStamp;
   uint32_t dwFrameNumber;
   uint32_t dwFlags;
   X_VECTOR4 vFloorClipPlane;
@@ -149,15 +149,14 @@ class KinectInputDriver final : public InputDriver {
   X_RESULT GetCapabilities(uint32_t user_index, uint32_t flags,
                            X_INPUT_CAPABILITIES* out_caps) override;
   X_RESULT GetState(uint32_t user_index, X_INPUT_STATE* out_state) override;
-  X_RESULT SetState(uint32_t user_index,
-                    X_INPUT_VIBRATION* vibration) override;
+  X_RESULT SetState(uint32_t user_index, X_INPUT_VIBRATION* vibration) override;
   X_RESULT GetKeystroke(uint32_t user_index, uint32_t flags,
                         X_INPUT_KEYSTROKE* out_keystroke) override;
   InputType GetInputType() const override { return InputType::Other; }
 
   // NUI API — called from xam_nui.cc.
   X_RESULT NuiInitialize(uint32_t flags);
-  void     NuiShutdown();
+  void NuiShutdown();
   X_RESULT NuiSkeletonGetNextFrame(uint32_t wait_ms,
                                    X_NUI_SKELETON_FRAME* out_frame);
   X_RESULT NuiCameraSetElevation(int32_t degrees);
@@ -184,22 +183,25 @@ class KinectInputDriver final : public InputDriver {
 
   // Map a NiTE2 skeleton (raw float[15][3] positions + confidence[15]) into
   // our X_NUI_SKELETON_DATA, filling interpolated joints.
-  void MapNiTE2Skeleton(const float positions[][3],
-                        const float confidence[],
-                        uint32_t tracking_id,
-                        uint32_t user_index,
+  void MapNiTE2Skeleton(const float positions[][3], const float confidence[],
+                        uint32_t tracking_id, uint32_t user_index,
                         X_NUI_SKELETON_DATA* out);
 
   // ── State ────────────────────────────────────────────────────────────────
   std::atomic<bool> initialized_{false};
   std::atomic<bool> thread_running_{false};
-  std::thread       poll_thread_;
-  std::mutex        frame_mutex_;
+  std::thread poll_thread_;
+  std::mutex frame_mutex_;
   X_NUI_SKELETON_FRAME frame_latest_{};
-  uint32_t          frame_number_{0};
-  bool              new_frame_{false};
+  uint32_t frame_number_{0};
+  bool new_frame_{false};
 
-  enum class Backend { None, Synthetic, WindowsSDK, OpenNI2 } backend_{Backend::None};
+  enum class Backend {
+    None,
+    Synthetic,
+    WindowsSDK,
+    OpenNI2
+  } backend_{Backend::None};
 
   // Windows SDK function pointers (void* to avoid including NuiApi.h).
   void* win_module_{nullptr};
@@ -214,7 +216,7 @@ class KinectInputDriver final : public InputDriver {
   void* oni_module_{nullptr};   // libOpenNI2.so / OpenNI2.dll
   void* nite_module_{nullptr};  // libNiTE2.so   / NiTE2.dll
   void* oni_device_{nullptr};   // openni::Device* (heap-allocated)
-  void* nite_tracker_{nullptr}; // nite::UserTracker* (heap-allocated)
+  void* nite_tracker_{nullptr};  // nite::UserTracker* (heap-allocated)
 
   // OpenNI2 function pointers used for init/shutdown only.
   void* pfn_oniInitialize_{nullptr};
