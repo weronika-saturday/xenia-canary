@@ -72,7 +72,7 @@ namespace kinect {
 // Callers (xam_nui.cc) byte-swap when writing to guest memory.
 // ---------------------------------------------------------------------------
 
-constexpr uint32_t kNuiSkeletonCount         = 6;
+constexpr uint32_t kNuiSkeletonCount = 6;
 constexpr uint32_t kNuiSkeletonPositionCount = 20;
 
 enum X_NUI_SKELETON_TRACKING_STATE : uint32_t {
@@ -213,9 +213,9 @@ class KinectInputDriver final : public InputDriver {
 
   // OpenNI2 / NiTE2 handles and function pointers.
   // We store opaque void* handles so the header stays SDK-free.
-  void* oni_module_{nullptr};   // libOpenNI2.so / OpenNI2.dll
-  void* nite_module_{nullptr};  // libNiTE2.so   / NiTE2.dll
-  void* oni_device_{nullptr};   // openni::Device* (heap-allocated)
+  void* oni_module_{nullptr};    // libOpenNI2.so / OpenNI2.dll
+  void* nite_module_{nullptr};   // libNiTE2.so   / NiTE2.dll
+  void* oni_device_{nullptr};    // openni::Device* (heap-allocated)
   void* nite_tracker_{nullptr};  // nite::UserTracker* (heap-allocated)
 
   // OpenNI2 function pointers used for init/shutdown only.
