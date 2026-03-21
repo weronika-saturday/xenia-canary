@@ -208,6 +208,7 @@ class KinectInputDriver final : public InputDriver {
   void* win_NuiInitialize_{nullptr};
   void* win_NuiShutdown_{nullptr};
   void* win_NuiSkeletonGetNextFrame_{nullptr};
+  void* win_NuiSkeletonTrackingEnable_{nullptr};
   void* win_NuiCameraSetElevation_{nullptr};
   void* win_NuiCameraGetElevation_{nullptr};
 

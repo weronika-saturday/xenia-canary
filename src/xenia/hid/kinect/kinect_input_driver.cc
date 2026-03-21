@@ -161,6 +161,20 @@ X_RESULT KinectInputDriver::NuiInitialize(uint32_t flags) {
           "falling back to synthetic.",
           static_cast<uint32_t>(hr));
       backend_ = Backend::Synthetic;
+    } else {
+      // NuiSkeletonTrackingEnable(NULL, NUI_SKELETON_TRACKING_FLAG_ENABLE_IN_NEAR_RANGE=0x10)
+      // NULL = use default seated/standing mode; flags=0 for standard tracking.
+      if (win_NuiSkeletonTrackingEnable_) {
+        using PfnTrack = int(__stdcall*)(void*, uint32_t);
+        int hr2 = reinterpret_cast<PfnTrack>(win_NuiSkeletonTrackingEnable_)(
+            nullptr, 0);
+        if (hr2 != 0) {
+          XELOGW(
+              "KinectInputDriver: NuiSkeletonTrackingEnable → {:08X} "
+              "(non-fatal)",
+              static_cast<uint32_t>(hr2));
+        }
+      }
     }
   }
 
@@ -316,24 +330,37 @@ bool KinectInputDriver::TryLoadWindowsSDK() {
   void* mod = XE_DLOPEN("Kinect10.dll");
   if (!mod) return false;
 
-  auto bind = [&](const char* sym, void** dst) -> bool {
+  auto bind_required = [&](const char* sym, void** dst) -> bool {
     *dst = XE_DLSYM(mod, sym);
     if (!*dst) {
-      XELOGW("KinectInputDriver: {} not found in Kinect10.dll", sym);
+      XELOGW("KinectInputDriver: required symbol {} not found in Kinect10.dll",
+             sym);
       XE_DLCLOSE(mod);
       win_module_ = nullptr;
       return false;
     }
     return true;
   };
+  auto bind_optional = [&](const char* sym, void** dst) {
+    *dst = XE_DLSYM(mod, sym);
+    if (!*dst) {
+      XELOGW("KinectInputDriver: optional symbol {} not found in Kinect10.dll",
+             sym);
+    }
+  };
 
   win_module_ = mod;
-  if (!bind("NuiInitialize", &win_NuiInitialize_)) return false;
-  if (!bind("NuiShutdown", &win_NuiShutdown_)) return false;
-  if (!bind("NuiSkeletonGetNextFrame", &win_NuiSkeletonGetNextFrame_))
+  // Core skeleton functions — required.
+  if (!bind_required("NuiInitialize", &win_NuiInitialize_)) return false;
+  if (!bind_required("NuiShutdown", &win_NuiShutdown_)) return false;
+  if (!bind_required("NuiSkeletonGetNextFrame", &win_NuiSkeletonGetNextFrame_))
     return false;
-  if (!bind("NuiCameraSetElevation", &win_NuiCameraSetElevation_)) return false;
-  if (!bind("NuiCameraGetElevation", &win_NuiCameraGetElevation_)) return false;
+  // NuiSkeletonTrackingEnable must be called after NuiInitialize.
+  bind_optional("NuiSkeletonTrackingEnable", &win_NuiSkeletonTrackingEnable_);
+  // Camera tilt — optional, not present in all SDK builds.
+  bind_optional("NuiCameraSetElevation", &win_NuiCameraSetElevation_);
+  bind_optional("NuiCameraGetElevation", &win_NuiCameraGetElevation_);
+  XELOGI("KinectInputDriver: Kinect10.dll loaded successfully.");
   return true;
 #else
   return false;
@@ -346,7 +373,8 @@ void KinectInputDriver::UnloadWindowsSDK() {
     win_module_ = nullptr;
   }
   win_NuiInitialize_ = win_NuiShutdown_ = win_NuiSkeletonGetNextFrame_ =
-      win_NuiCameraSetElevation_ = win_NuiCameraGetElevation_ = nullptr;
+      win_NuiSkeletonTrackingEnable_ = win_NuiCameraSetElevation_ =
+          win_NuiCameraGetElevation_ = nullptr;
 }
 
 void KinectInputDriver::PollWindowsSDK() {
