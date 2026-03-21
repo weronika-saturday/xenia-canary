@@ -59,6 +59,7 @@ target_link_libraries(xenia-app PRIVATE
   xenia-gpu-vulkan
   xenia-hid
   xenia-hid-nop
+  xenia-hid-kinect
   xenia-kernel
   xenia-patcher
   xenia-ui
