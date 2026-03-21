@@ -207,7 +207,7 @@ X_RESULT KinectInputDriver::NuiSkeletonGetNextFrame(
       }
     }
     if (!wait_ms || std::chrono::steady_clock::now() >= deadline)
-      return X_ERROR_NOT_READY;
+      return X_ERROR_FUNCTION_FAILED;
     std::this_thread::sleep_for(std::chrono::milliseconds(2));
   }
 }
@@ -271,7 +271,7 @@ void KinectInputDriver::BuildSyntheticFrame(X_NUI_SKELETON_FRAME* f) {
 // ---------------------------------------------------------------------------
 
 void KinectInputDriver::PollThread() {
-  xe::threading::SetCurrentThreadName("KinectPoll");
+  xe::threading::set_name("KinectPoll");
   constexpr auto kPeriod = std::chrono::milliseconds(1000 / 30);
 
   while (thread_running_) {
