@@ -16,15 +16,6 @@
 #include "xenia/base/logging.h"
 #include "xenia/base/threading.h"
 
-// Forward declaration — implemented in xam_nui.cc to avoid circular deps.
-namespace xe {
-namespace hid {
-namespace kinect {
-void SetGlobalKinectDriver(KinectInputDriver* driver);
-}  // namespace kinect
-}  // namespace hid
-}  // namespace xe
-
 // Platform-specific dynamic loading.
 #if XE_PLATFORM_WIN32
 #include "xenia/base/platform_win.h"
@@ -89,6 +80,9 @@ static constexpr int kNiTE2ToXbox[15] = {
     NUI_JOINT_FOOT_RIGHT,       // NiTE JOINT_RIGHT_FOOT
 };
 
+// Static singleton — set in Setup(), cleared in destructor.
+KinectInputDriver* KinectInputDriver::instance_ = nullptr;
+
 // ---------------------------------------------------------------------------
 // Ctor / Dtor
 // ---------------------------------------------------------------------------
@@ -98,7 +92,7 @@ KinectInputDriver::KinectInputDriver(xe::ui::Window* window,
     : InputDriver(window, window_z_order) {}
 
 KinectInputDriver::~KinectInputDriver() {
-  SetGlobalKinectDriver(nullptr);
+  instance_ = nullptr;
   thread_running_ = false;
   if (poll_thread_.joinable()) poll_thread_.join();
   NuiShutdown();
@@ -111,6 +105,7 @@ KinectInputDriver::~KinectInputDriver() {
 // ---------------------------------------------------------------------------
 
 X_STATUS KinectInputDriver::Setup() {
+  instance_ = this;
   SetGlobalKinectDriver(this);
 #if XE_PLATFORM_WIN32
   if (TryLoadWindowsSDK()) {

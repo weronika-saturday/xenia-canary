@@ -146,6 +146,10 @@ class KinectInputDriver final : public InputDriver {
 
   X_STATUS Setup() override;
 
+  // Global singleton accessor — set in Setup(), cleared in destructor.
+  // Used by xam_nui.cc to route XamNui* calls to the active driver.
+  static KinectInputDriver* instance() { return instance_; }
+
   X_RESULT GetCapabilities(uint32_t user_index, uint32_t flags,
                            X_INPUT_CAPABILITIES* out_caps) override;
   X_RESULT GetState(uint32_t user_index, X_INPUT_STATE* out_state) override;
@@ -230,6 +234,8 @@ class KinectInputDriver final : public InputDriver {
   void* pfn_niteUserTrackerDestroy_{nullptr};
   void* pfn_niteUserTrackerReadFrame_{nullptr};
   void* pfn_niteUserTrackerFrameRelease_{nullptr};
+
+  static KinectInputDriver* instance_;
 };
 
 }  // namespace kinect
