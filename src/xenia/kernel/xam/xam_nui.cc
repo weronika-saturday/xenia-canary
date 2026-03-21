@@ -66,6 +66,11 @@ dword_result_t XamNuiGetDeviceStatus_entry(
   if (!cvars::allow_nui_initialization) {
     return 0xC0050006;
   }
+  // Initialize on first call — games poll GetDeviceStatus before anything
+  // else and expect the device to become ready.
+  if (kd() && !kd()->is_initialized()) {
+    kd()->NuiInitialize(0x08);  // NUI_INITIALIZE_FLAG_USES_SKELETON
+  }
   status_ptr->status = (kd() && kd()->is_initialized()) ? 0x01u : 0x00u;
   return X_ERROR_SUCCESS;
 }
@@ -178,12 +183,6 @@ dword_result_t XamNuiIsDeviceReady_entry() {
      - 0x0040
   */
   if (!cvars::allow_nui_initialization) return 0;
-  // Initialise on demand: the first time the game polls IsDeviceReady after
-  // allow_nui_initialization is set, kick off the NUI subsystem so skeleton
-  // data starts flowing without requiring the game to call XamNuiInitialize.
-  if (kd() && !kd()->is_initialized()) {
-    kd()->NuiInitialize(0x08);  // NUI_INITIALIZE_FLAG_USES_SKELETON
-  }
   return (kd() && kd()->is_initialized()) ? 1u : 0u;
 }
 DECLARE_XAM_EXPORT1(XamNuiIsDeviceReady, kNone, kImplemented);
