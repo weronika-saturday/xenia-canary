@@ -162,8 +162,9 @@ X_RESULT KinectInputDriver::NuiInitialize(uint32_t flags) {
           static_cast<uint32_t>(hr));
       backend_ = Backend::Synthetic;
     } else {
-      // NuiSkeletonTrackingEnable(NULL, NUI_SKELETON_TRACKING_FLAG_ENABLE_IN_NEAR_RANGE=0x10)
-      // NULL = use default seated/standing mode; flags=0 for standard tracking.
+      // NuiSkeletonTrackingEnable(NULL,
+      // NUI_SKELETON_TRACKING_FLAG_ENABLE_IN_NEAR_RANGE=0x10) NULL = use
+      // default seated/standing mode; flags=0 for standard tracking.
       if (win_NuiSkeletonTrackingEnable_) {
         using PfnTrack = int(__stdcall*)(void*, uint32_t);
         int hr2 = reinterpret_cast<PfnTrack>(win_NuiSkeletonTrackingEnable_)(
