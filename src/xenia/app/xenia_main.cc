@@ -55,6 +55,7 @@
 
 // Available input drivers:
 #include "xenia/hid/nop/nop_hid.h"
+#include "xenia/hid/kinect/kinect_hid.h"
 #if !XE_PLATFORM_ANDROID
 #include "xenia/hid/sdl/sdl_hid.h"
 #endif  // !XE_PLATFORM_ANDROID
@@ -66,15 +67,15 @@
 #if XE_PLATFORM_WIN32
 #define APU_OPTIONS "[any, nop, sdl, xaudio2]"
 #define GPU_OPTIONS "[any, d3d12, vulkan, null]"
-#define HID_OPTIONS "[any, nop, sdl, winkey, xinput]"
+#define HID_OPTIONS "[any, nop, sdl, winkey, xinput, kinect]"
 #elif XE_PLATFORM_LINUX
 #define APU_OPTIONS "[any, alsa, nop, sdl]"
 #define GPU_OPTIONS "[any, vulkan, null]"
-#define HID_OPTIONS "[any, nop, sdl]"
+#define HID_OPTIONS "[any, nop, sdl, kinect]"
 #else
 #define APU_OPTIONS "[any, nop, sdl]"
 #define GPU_OPTIONS "[any, vulkan, null]"
-#define HID_OPTIONS "[any, nop, sdl]"
+#define HID_OPTIONS "[any, nop, sdl, kinect]"
 #endif
 
 DEFINE_string(apu, "any", "Audio system. Use: " APU_OPTIONS, "APU");
@@ -322,77 +323,6 @@ std::unique_ptr<apu::AudioSystem> EmulatorApp::CreateAudioSystem(
 }
 
 std::unique_ptr<gpu::GraphicsSystem> EmulatorApp::CreateGraphicsSystem() {
-  // While Vulkan is supported by a large variety of operating systems (Windows,
-  // GNU/Linux, Android, also via the MoltenVK translation layer on top of Metal
-  // on macOS and iOS), please don't remove platform-specific GPU backends from
-  // Xenia.
-  //
-  // Regardless of the operating system, having multiple options provides more
-  // stability to users. In case of driver issues, users may try switching
-  // between the available backends. For example, in June 2022, on Nvidia Ampere
-  // (RTX 30xx), Xenia had synchronization issues that resulted in flickering,
-  // most prominently in 4D5307E6, on Direct3D 12 - but the same issue was not
-  // reproducible in the Vulkan backend, however, it used ImageSampleExplicitLod
-  // with explicit gradients for cubemaps, which triggered a different driver
-  // bug on Nvidia (every 1 out of 2x2 pixels receiving junk).
-  //
-  // Specifically on Microsoft platforms, there are a few reasons why supporting
-  // Direct3D 12 is desirable rather than limiting Xenia to Vulkan only:
-  // - Wider hardware support for Direct3D 12 on x86 Windows desktops.
-  //   Direct3D 12 requires the minimum of Nvidia Fermi, or, with a pre-2021
-  //   driver version, Intel HD Graphics 4200. Vulkan, however, is supported
-  //   only starting with Nvidia Kepler and a much more recent Intel UHD
-  //   Graphics generation.
-  // - Wider hardware support on other kinds of Microsoft devices. The Xbox One
-  //   and the Xbox Series X|S only support Direct3D as the GPU API in their UWP
-  //   runtime, and only version 12 can be granted expanded resource access.
-  //   Qualcomm, as of June 2022, also doesn't provide a Vulkan implementation
-  //   for their Arm-based Windows devices, while Direct3D 12 is available.
-  //   - Both older Intel GPUs and the Xbox One apparently, as well as earlier
-  //     Windows 10 versions, also require Shader Model 5.1 DXBC shaders rather
-  //     than Shader Model 6 DXIL ones, so a DXBC shader translator should be
-  //     available in Xenia too, a DXIL one doesn't fully replace it.
-  // - As of June 2022, AMD also refuses to implement the
-  //   VK_EXT_fragment_shader_interlock Vulkan extension in their drivers, as
-  //   well as its OpenGL counterpart, which is heavily utilized for accurate
-  //   support of Xenos render target formats that don't have PC equivalents
-  //   (8_8_8_8_GAMMA, 2_10_10_10_FLOAT, 16_16 and 16_16_16_16 with -32 to 32
-  //   range, D24FS8) with correct blending. Direct3D 12, however, requires
-  //   support for similar functionality (rasterizer-ordered views) on the
-  //   feature level 12_1, and the AMD driver implements it on Direct3D, as well
-  //   as raster order groups in their Metal driver.
-  //
-  // Additionally, different host GPU APIs receive feature support at different
-  // paces. VK_EXT_fragment_shader_interlock first appeared in 2019, for
-  // instance, while Xenia had been taking advantage of rasterizer-ordered views
-  // on Direct3D 12 for over half a year at that point (they have existed in
-  // Direct3D 12 since the first version).
-  //
-  // MoltenVK on top Metal also has its flaws and limitations. Metal, for
-  // instance, as of June 2022, doesn't provide a switch for primitive restart,
-  // while Vulkan does - so MoltenVK is not completely transparent to Xenia,
-  // many of its issues that may be not very obvious (unlike when the Metal API
-  // is used directly) should be taken into account in Xenia. Also, as of June
-  // 2022, MoltenVK translates SPIR-V shaders into the C++-based Metal Shading
-  // Language rather than AIR directly, which likely massively increases
-  // pipeline object creation time - and Xenia translates shaders and creates
-  // pipelines when they're first actually used for a draw command by the game,
-  // thus it can't precompile anything that hasn't ever been encountered before
-  // there's already no time to waste.
-  //
-  // Very old hardware (Direct3D 10 level) is also not supported by most Vulkan
-  // drivers. However, in the future, Xenia may be ported to it using the
-  // Direct3D 11 API with the feature level 10_1 or 10_0. OpenGL, however, had
-  // been lagging behind Direct3D prior to versions 4.x, and didn't receive
-  // compute shaders until a 4.2 extension (while 4.2 already corresponds
-  // roughly to Direct3D 11 features) - and replacing Xenia compute shaders with
-  // transform feedback / stream output is not always trivial (in particular,
-  // will need to rely on GL_ARB_transform_feedback3 for skipping over memory
-  // locations that shouldn't be overwritten).
-  //
-  // For maintainability, as much implementation code as possible should be
-  // placed in `xe::gpu` and shared between the backends rather than duplicated
-  // between them.
   const std::string gpu_implementation_name = cvars::gpu;
   if (gpu_implementation_name == "null") {
     return std::make_unique<gpu::null::NullGraphicsSystem>();
@@ -445,6 +375,11 @@ std::vector<std::unique_ptr<hid::InputDriver>> EmulatorApp::CreateInputDrivers(
 #if !XE_PLATFORM_ANDROID
     factory.Add("sdl", xe::hid::sdl::Create);
 #endif  // !XE_PLATFORM_ANDROID
+    // Kinect: Windows → Kinect10.dll, Linux/macOS → OpenNI2+NiTE2.
+    // Falls back to synthetic skeleton if no hardware/SDK present.
+    // Uses InputType::Other so FilterDrivers() never routes gamepad
+    // queries to it.
+    factory.Add("kinect", xe::hid::kinect::Create);
 #if XE_PLATFORM_WIN32
     // WinKey input driver should always be the last input driver added!
     factory.Add("winkey", xe::hid::winkey::Create);
@@ -769,14 +704,7 @@ void EmulatorApp::EmulatorThread() {
 }
 
 void EmulatorApp::ShutdownEmulatorThreadFromUIThread() {
-  // TODO(Triang3l): Proper shutdown of the emulator (relying on std::quick_exit
-  // for now) - currently WaitUntilExit loops forever otherwise (plus possibly
-  // lots of other things not shutting down correctly now). Some parts of the
-  // code call the regular std::exit, which seems to be calling destructors (at
-  // least on Linux), so the entire join is currently commented out.
 #if 0
-  // Same thread as the one created it, to make sure there's zero possibility of
-  // a race with the creation of the emulator thread.
   assert_true(app_context().IsInUIThread());
   emulator_thread_quit_requested_.store(true, std::memory_order_relaxed);
   if (!emulator_thread_.joinable()) {
