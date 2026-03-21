@@ -54,8 +54,8 @@
 #endif  // XE_PLATFORM_WIN32
 
 // Available input drivers:
-#include "xenia/hid/nop/nop_hid.h"
 #include "xenia/hid/kinect/kinect_hid.h"
+#include "xenia/hid/nop/nop_hid.h"
 #if !XE_PLATFORM_ANDROID
 #include "xenia/hid/sdl/sdl_hid.h"
 #endif  // !XE_PLATFORM_ANDROID
