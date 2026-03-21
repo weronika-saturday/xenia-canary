@@ -135,9 +135,7 @@ dword_result_t XamNuiCameraElevationGetAngle_entry(lpqword_t unk1,
 }
 DECLARE_XAM_EXPORT1(XamNuiCameraElevationGetAngle, kNone, kStub);
 
-dword_result_t XamNuiCameraGetTiltControllerType_entry() {
-  return X_E_FAIL;
-}
+dword_result_t XamNuiCameraGetTiltControllerType_entry() { return X_E_FAIL; }
 DECLARE_XAM_EXPORT1(XamNuiCameraGetTiltControllerType, kNone, kStub);
 
 dword_result_t XamNuiCameraSetFlags_entry(qword_t unk1, dword_t unk2) {
@@ -282,9 +280,7 @@ dword_result_t XamIsNatalPlaybackEnabled_entry(unknown_t unk1, unknown_t unk2) {
 }
 DECLARE_XAM_EXPORT2(XamIsNatalPlaybackEnabled, kNone, kStub, kHighFrequency);
 
-dword_result_t XamNuiIsChatMicEnabled_entry() {
-  return false;
-}
+dword_result_t XamNuiIsChatMicEnabled_entry() { return false; }
 DECLARE_XAM_EXPORT1(XamNuiIsChatMicEnabled, kNone, kImplemented);
 
 /* HUD Notes:
@@ -342,9 +338,7 @@ uint32_t XeXamNuiHudCheck(dword_t unk1) {
   return X_STATUS_SUCCESS;
 }
 
-dword_result_t XamNuiHudGetInitializeFlags_entry() {
-  return 0;
-}
+dword_result_t XamNuiHudGetInitializeFlags_entry() { return 0; }
 DECLARE_XAM_EXPORT1(XamNuiHudGetInitializeFlags, kNone, kImplemented);
 
 void XamNuiHudGetVersions_entry(lpqword_t unk1, lpqword_t unk2) {
