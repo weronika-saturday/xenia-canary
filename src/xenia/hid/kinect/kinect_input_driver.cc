@@ -106,7 +106,6 @@ KinectInputDriver::~KinectInputDriver() {
 
 X_STATUS KinectInputDriver::Setup() {
   instance_ = this;
-  SetGlobalKinectDriver(this);
 #if XE_PLATFORM_WIN32
   if (TryLoadWindowsSDK()) {
     backend_ = Backend::WindowsSDK;
