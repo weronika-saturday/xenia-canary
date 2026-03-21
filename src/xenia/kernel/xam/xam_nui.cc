@@ -31,31 +31,10 @@ namespace kernel {
 namespace xam {
 // https://web.cs.ucdavis.edu/~okreylos/ResDev/Kinect/MainPage.html
 
-// ---------------------------------------------------------------------------
-// Global KinectInputDriver pointer — set by KinectInputDriver::Setup() via
-// xe::hid::kinect::SetGlobalKinectDriver(), cleared in destructor.
-// This avoids accessing the private drivers_ vector of InputSystem.
-// ---------------------------------------------------------------------------
-static xe::hid::kinect::KinectInputDriver* g_kinect_driver = nullptr;
-
-}  // namespace xam
-}  // namespace kernel
-}  // namespace xe
-
-// Called from KinectInputDriver::Setup() and ~KinectInputDriver().
-namespace xe {
-namespace hid {
-namespace kinect {
-void SetGlobalKinectDriver(KinectInputDriver* driver) {
-  xe::kernel::xam::g_kinect_driver = driver;
+// Convenience alias — null-safe accessor for the active Kinect driver.
+static xe::hid::kinect::KinectInputDriver* kd() {
+  return xe::hid::kinect::KinectInputDriver::instance();
 }
-}  // namespace kinect
-}  // namespace hid
-}  // namespace xe
-
-namespace xe {
-namespace kernel {
-namespace xam {
 
 struct X_NUI_DEVICE_STATUS {
   /* Notes:
@@ -87,8 +66,7 @@ dword_result_t XamNuiGetDeviceStatus_entry(
   if (!cvars::allow_nui_initialization) {
     return 0xC0050006;
   }
-  status_ptr->status =
-      (g_kinect_driver && g_kinect_driver->is_initialized()) ? 0x01u : 0x00u;
+  status_ptr->status = (kd() && kd()->is_initialized()) ? 0x01u : 0x00u;
   return X_ERROR_SUCCESS;
 }
 DECLARE_XAM_EXPORT1(XamNuiGetDeviceStatus, kNone, kStub);
@@ -203,10 +181,10 @@ dword_result_t XamNuiIsDeviceReady_entry() {
   // Initialise on demand: the first time the game polls IsDeviceReady after
   // allow_nui_initialization is set, kick off the NUI subsystem so skeleton
   // data starts flowing without requiring the game to call XamNuiInitialize.
-  if (g_kinect_driver && !g_kinect_driver->is_initialized()) {
-    g_kinect_driver->NuiInitialize(0x08);  // NUI_INITIALIZE_FLAG_USES_SKELETON
+  if (kd() && !kd()->is_initialized()) {
+    kd()->NuiInitialize(0x08);  // NUI_INITIALIZE_FLAG_USES_SKELETON
   }
-  return (g_kinect_driver && g_kinect_driver->is_initialized()) ? 1u : 0u;
+  return (kd() && kd()->is_initialized()) ? 1u : 0u;
 }
 DECLARE_XAM_EXPORT1(XamNuiIsDeviceReady, kNone, kImplemented);
 
@@ -318,6 +296,23 @@ dword_result_t XamShowNuiTroubleshooterUI_entry(dword_t user_index,
                                                 dword_t tracking_id,
                                                 dword_t flags) {
   /* Notes:
+     - calls XamPackageManagerGetExperienceMode(&var) with var = 1
+     - If returns less than zero or (var & 1) == 0 then get error message:
+       - if XamPackageManagerGetExperienceMode = 0 then call XamShowMessageBoxUI
+         - if XamShowMessageBoxUI returns 0x3e5 then XamShowNuiTroubleshooterUI
+     returns 0
+       - else XamShowNuiTroubleshooterUI returns 0x65b and call another func
+     - else:
+       - call XamNuiHudSetEngagedTrackingID(tracking_id) and doesn't care aboot
+     return and set var2 = 2
+       - checks if (flag & 0x800000) == 0
+         - if true call XamNuiGetDeviceStatus.
+           - if XamNuiGetDeviceStatus != 0 set var2 = 3
+       - else var2 = 4
+       - XamAppRequestLoadEx(var2);
+       - if return = 0 then XamShowNuiTroubleshooterUI returns 5
+       - else set buffer[8] and call
+     XMsgSystemProcessCall(0xfe,0x21028,buffer,0xc);
      - XamNuiNatalCameraUpdateComplete calls
      XamShowNuiTroubleshooterUI(0xff,0,0) if param = -0x7ff8fffe
   */
