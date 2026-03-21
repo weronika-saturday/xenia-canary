@@ -204,8 +204,7 @@ dword_result_t XamNuiIsDeviceReady_entry() {
   // allow_nui_initialization is set, kick off the NUI subsystem so skeleton
   // data starts flowing without requiring the game to call XamNuiInitialize.
   if (g_kinect_driver && !g_kinect_driver->is_initialized()) {
-    g_kinect_driver->NuiInitialize(
-        0x08);  // NUI_INITIALIZE_FLAG_USES_SKELETON
+    g_kinect_driver->NuiInitialize(0x08);  // NUI_INITIALIZE_FLAG_USES_SKELETON
   }
   return (g_kinect_driver && g_kinect_driver->is_initialized()) ? 1u : 0u;
 }
