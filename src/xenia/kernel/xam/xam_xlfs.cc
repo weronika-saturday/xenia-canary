@@ -54,5 +54,3 @@ DECLARE_XAM_EXPORT1(XamXlfsUnmountUploadQueueInstance, kNone, kStub);
 }  // namespace xam
 }  // namespace kernel
 }  // namespace xe
-
-DECLARE_XAM_EMPTY_REGISTER_EXPORTS(Xlfs);
