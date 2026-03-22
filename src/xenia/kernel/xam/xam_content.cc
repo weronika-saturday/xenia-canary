@@ -423,13 +423,12 @@ dword_result_t XamContentOpenFile_entry(
         entry, kernel_state()->emulator()->content_root(), progress, true);
   }
 
-  auto device = vfs::XContentContainerDevice::CreateContentDevice(root_name.value(), host_path);
-    
+  auto device = vfs::XContentContainerDevice::CreateContentDevice(
+    root_name.value(), host_path);
   device->Initialize();
   kernel_state()->file_system()->RegisterDevice(std::move(device));
   //kernel_state()->file_system()->RegisterSymbolicLink(root_name.value() + ":",
   //                                                    device_path_);
-  //
   // TODO(gibbed): arguments assumed based on XamContentCreate.
   return X_ERROR_SUCCESS;
 }
