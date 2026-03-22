@@ -474,7 +474,7 @@ dword_result_t XamReadBiometricData_entry(
   }
   if (overlapped_ptr) {
     kernel_state()->CompleteOverlappedImmediate(overlapped_ptr,
-                                               X_E_NO_SUCH_USER);
+                                                X_E_NO_SUCH_USER);
     return X_ERROR_IO_PENDING;
   }
   return X_E_NO_SUCH_USER;
