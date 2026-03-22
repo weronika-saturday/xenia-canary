@@ -23,6 +23,7 @@
 #include "xenia/ui/imgui_dialog.h"
 #include "xenia/ui/imgui_drawer.h"
 #include "xenia/vfs/devices/stfs_xbox.h"
+#include "xenia/vfs/devices/xcontent_container_device.h"
 #include "xenia/xbox.h"
 
 DEFINE_int32(
