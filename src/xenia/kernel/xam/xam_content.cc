@@ -424,11 +424,13 @@ dword_result_t XamContentOpenFile_entry(
   }
 
   auto device = vfs::XContentContainerDevice::CreateContentDevice(
-    root_name.value(), host_path);
+      root_name.value(), host_path);
   device->Initialize();
   kernel_state()->file_system()->RegisterDevice(std::move(device));
-  //kernel_state()->file_system()->RegisterSymbolicLink(root_name.value() + ":",
-  //                                                    device_path_);
+  // kernel_state()->file_system()->RegisterSymbolicLink(root_name.value() +
+  // ":",
+  //                                                     device_path_);
+
   // TODO(gibbed): arguments assumed based on XamContentCreate.
   return X_ERROR_SUCCESS;
 }
@@ -664,190 +666,12 @@ dword_result_t XamSwapDisc_entry(
 
   auto completion_event = [completion_handle]() -> void {
     auto kevent = xboxkrnl::xeKeSetEvent(completion_handle, 1, 0);
-
-    // Release the completion handle
-    auto object =
-        XObject::GetNativeObject<XObject>(kernel_state(), completion_handle);
-    if (object) {
-      object->Retain();
-    }
   };
 
-  if (info->disc_number == disc_number) {
-    completion_event();
-    return X_ERROR_SUCCESS;
-  }
-
-  auto filesystem = kernel_state()->file_system();
-  auto mount_path = "\\Device\\LauncherData";
-
-  if (filesystem->ResolvePath(mount_path) != NULL) {
-    filesystem->UnregisterDevice(mount_path);
-  }
-
-  std::u16string text_message = xe::load_and_swap<std::u16string>(
-      kernel_state()->memory()->TranslateVirtual(error_message->stringTextPtr));
-
-  const std::filesystem::path new_disc_path =
-      kernel_state()->emulator()->GetNewDiscPath(xe::to_utf8(text_message));
-  XELOGI("GetNewDiscPath returned path {}.", new_disc_path.string().c_str());
-
-  // TODO(Gliniak): Implement checking if inserted file is requested one
-  kernel_state()->emulator()->MountPath(new_disc_path, mount_path);
-  completion_event();
-
   return X_ERROR_SUCCESS;
 }
-DECLARE_XAM_EXPORT1(XamSwapDisc, kContent, kSketchy);
+DECLARE_XAM_EXPORT1(XamSwapDisc, kContent, kStub);
 
-dword_result_t XamLoaderGetDvdTrayState_entry() {
-  return static_cast<uint8_t>(kernel_state()->smc()->GetTrayState());
-}
-DECLARE_XAM_EXPORT1(XamLoaderGetDvdTrayState, kNone, kImplemented);
-
-void XamLoaderGetMediaInfoEx_entry(lpdword_t media_type, lpdword_t unk2,
-                                   lpdword_t unk3) {
-  if (media_type) {
-    *media_type = X_DVD_DISC_STATE::XBOX_360_GAME_DISC;
-  }
-  if (unk2) {
-    *unk2 = 0;
-  }
-  if (unk3) {
-    *unk3 = 0;
-  }
-}
-DECLARE_XAM_EXPORT1(XamLoaderGetMediaInfoEx, kNone, kStub);
-
-void XamLoaderGetMediaInfo_entry(lpdword_t media_type, lpdword_t unk2) {
-  XamLoaderGetMediaInfoEx_entry(media_type, unk2, 0);
-}
-DECLARE_XAM_EXPORT1(XamLoaderGetMediaInfo, kNone, kStub);
-
-dword_result_t XamContentLaunchImageFromFileInternal_entry(
-    lpstring_t image_location, lpstring_t xex_name, dword_t unk) {
-  const std::string image_path = static_cast<std::string>(image_location);
-  const std::string xex_name_ = static_cast<std::string>(xex_name);
-
-  vfs::Entry* entry = kernel_state()->file_system()->ResolvePath(image_path);
-
-  if (!entry) {
-    return X_STATUS_NO_SUCH_FILE;
-  }
-
-  const std::filesystem::path host_path =
-      kernel_state()->emulator()->content_root() / entry->name();
-  if (!std::filesystem::exists(host_path)) {
-    uint64_t progress = 0;
-
-    vfs::VirtualFileSystem::ExtractContentFile(
-        entry, kernel_state()->emulator()->content_root(), progress, true);
-  }
-
-  auto xam = kernel_state()->GetKernelModule<XamModule>("xam.xex");
-
-  auto& loader_data = xam->loader_data();
-  loader_data.host_path = xe::path_to_utf8(host_path);
-  loader_data.launch_path = xex_name_;
-
-  xam->SaveLoaderData();
-
-  auto display_window = kernel_state()->emulator()->display_window();
-  auto imgui_drawer = kernel_state()->emulator()->imgui_drawer();
-
-  if (display_window && imgui_drawer) {
-    display_window->app_context().CallInUIThreadSynchronous([imgui_drawer]() {
-      xe::ui::ImGuiDialog::ShowMessageBox(
-          imgui_drawer, "Launching new title!",
-          "Launching new title. \nPlease close Xenia and launch it again. Game "
-          "should load automatically.");
-    });
-  }
-
-  kernel_state()->TerminateTitle();
-  return X_ERROR_SUCCESS;
-}
-
-DECLARE_XAM_EXPORT1(XamContentLaunchImageFromFileInternal, kContent, kStub);
-
-dword_result_t XamContentLaunchImageInternal_entry(lpvoid_t content_data_ptr,
-                                                   lpstring_t xex_path) {
-  XCONTENT_AGGREGATE_DATA content_data = *content_data_ptr.as<XCONTENT_DATA*>();
-
-  // title_id is written into first 8 characters of filename
-  const uint32_t title_id = xe::string_util::from_string<uint32_t>(
-      content_data.file_name().substr(0, 8), true);
-
-  // This should be done via content_manager, however as it isn't capable of
-  // such action we need to improvise.
-  const std::string package_path =
-      fmt::format("GAME:/Content/0000000000000000/{:08X}/{:08X}/{}", title_id,
-                  static_cast<uint32_t>(content_data.content_type.get()),
-                  content_data.file_name());
-
-  auto entry = kernel_state()->file_system()->ResolvePath(package_path);
-
-  if (!entry) {
-    return X_STATUS_NO_SUCH_FILE;
-  }
-
-  const std::filesystem::path host_path =
-      kernel_state()->emulator()->content_root() / entry->name();
-
-  if (!std::filesystem::exists(host_path)) {
-    uint64_t progress = 0;
-    kernel_state()->file_system()->ExtractContentFile(
-        entry, kernel_state()->emulator()->content_root(), progress, true);
-  }
-
-  auto xam = kernel_state()->GetKernelModule<XamModule>("xam.xex");
-
-  auto& loader_data = xam->loader_data();
-  loader_data.host_path = xe::path_to_utf8(host_path);
-  loader_data.launch_path = xex_path.value();
-
-  xam->SaveLoaderData();
-
-  auto display_window = kernel_state()->emulator()->display_window();
-  auto imgui_drawer = kernel_state()->emulator()->imgui_drawer();
-
-  if (display_window && imgui_drawer) {
-    display_window->app_context().CallInUIThreadSynchronous([imgui_drawer]() {
-      xe::ui::ImGuiDialog::ShowMessageBox(
-          imgui_drawer, "Launching new title!",
-          "Launching new title. \nPlease close Xenia and launch it again. Game "
-          "should load automatically.");
-    });
-  }
-
-  kernel_state()->TerminateTitle();
-  return X_ERROR_SUCCESS;
-}
-
-DECLARE_XAM_EXPORT1(XamContentLaunchImageInternal, kContent, kStub);
-
-void XamContentRegisterChangeCallback_entry(dword_t callback) {
-  kernel_state()->xam_state()->SetContentRegisterCallback(callback);
-}
-DECLARE_XAM_EXPORT1(XamContentRegisterChangeCallback, kContent, kImplemented);
-
-dword_result_t XamContentGetDeviceVolumePath_entry(dword_t device_id,
-                                                   lpvoid_t path_ptr,
-                                                   dword_t path_size,
-                                                   dword_t append_backslash) {
-  std::string volume_path = "hdd0\\";
-  if (device_id != static_cast<uint32_t>(DummyDeviceId::HDD)) {
-    return X_ERROR_FUNCTION_FAILED;
-  }
-
-  char* path =
-      kernel_memory()->TranslateVirtual<char*>(path_ptr.guest_address());
-
-  string_util::copy_truncating(path, volume_path, path_size);
-
-  return X_ERROR_SUCCESS;
-}
-DECLARE_XAM_EXPORT1(XamContentGetDeviceVolumePath, kContent, kStub);
 }  // namespace xam
 }  // namespace kernel
 }  // namespace xe
