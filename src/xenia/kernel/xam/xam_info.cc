@@ -808,6 +808,31 @@ DECLARE_XAM_EXPORT1(XamDoesOmniNeedConfiguration, kNone, kStub);
 dword_result_t XamFirstRunExperienceShouldRun_entry() { return 0; }
 DECLARE_XAM_EXPORT1(XamFirstRunExperienceShouldRun, kNone, kStub);
 
+dword_result_t EtxProducerRegister_entry(lpstring_t psz_name, dword_t dw_flags,
+                                         lpdword_t ph_producer) {
+  if (ph_producer) {
+    // Return a non-zero dummy handle so subsequent EtxEvent* calls have
+    // something to pass back (they are all stubs too).
+    *ph_producer = 0x45545800u;  // 'ETX\0'
+  }
+  return X_ERROR_SUCCESS;
+}
+DECLARE_XAM_EXPORT1(EtxProducerRegister, kNone, kStub);
+
+// EtxProducerUnregister(hProducer)
+dword_result_t EtxProducerUnregister_entry(dword_t h_producer) {
+  return X_ERROR_SUCCESS;
+}
+DECLARE_XAM_EXPORT1(EtxProducerUnregister, kNone, kStub);
+
+// EtxEventWrite(hProducer, eventId, cbData, pData)
+// Fires a telemetry event — no-op stub.
+dword_result_t EtxEventWrite_entry(dword_t h_producer, dword_t event_id,
+                                   dword_t cb_data, lpvoid_t p_data) {
+  return X_ERROR_SUCCESS;
+}
+DECLARE_XAM_EXPORT2(EtxEventWrite, kNone, kStub, kHighFrequency);
+
 }  // namespace xam
 }  // namespace kernel
 }  // namespace xe
