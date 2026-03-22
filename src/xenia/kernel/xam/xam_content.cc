@@ -407,7 +407,6 @@ dword_result_t XamContentOpenFile_entry(
     dword_t user_index, lpstring_t root_name, lpstring_t path, dword_t flags,
     lpdword_t disposition_ptr, lpdword_t license_mask_ptr,
     pointer_t<XAM_OVERLAPPED> overlapped_ptr) {
-
   auto entry = kernel_state()->file_system()->ResolvePath(path.value());
 
   if (!entry) {
@@ -424,13 +423,13 @@ dword_result_t XamContentOpenFile_entry(
         entry, kernel_state()->emulator()->content_root(), progress, true);
   }
 
-  auto device = vfs::XContentContainerDevice::CreateContentDevice(root_name.value(),
-                                                    host_path);
+  auto device = vfs::XContentContainerDevice::CreateContentDevice(root_name.value(), host_path);
+    
   device->Initialize();
   kernel_state()->file_system()->RegisterDevice(std::move(device));
   //kernel_state()->file_system()->RegisterSymbolicLink(root_name.value() + ":",
   //                                                    device_path_);
-
+  //
   // TODO(gibbed): arguments assumed based on XamContentCreate.
   return X_ERROR_SUCCESS;
 }
