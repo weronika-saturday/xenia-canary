@@ -430,6 +430,57 @@ void XamNuiPlayerEngagementUpdate_entry(qword_t unk1, unknown_t unk2,
 }
 DECLARE_XAM_EXPORT1(XamNuiPlayerEngagementUpdate, kNone, kStub);
 
+dword_result_t XamXStudioRequest_entry(dword_t cmd, lpvoid_t p_in_out) {
+  if (cmd == 6 && p_in_out) {
+    // Report Kinect as NOT present (bit 31 set) so callers that check this
+    // before XamNuiGetDeviceStatus don't spin-wait.
+    auto* out = kernel_state()->memory()->TranslateVirtual<uint32_t*>(
+        p_in_out.guest_address());
+    *out = xe::byte_swap(uint32_t(0x80000000));
+    return X_ERROR_SUCCESS;
+  }
+  return X_E_FAIL;
+}
+DECLARE_XAM_EXPORT2(XamXStudioRequest, kNone, kStub, kHighFrequency);
+
+// ---------------------------------------------------------------------------
+// XamNuiCameraTiltSetCallback(pfn_callback, pv_context)
+// Registers a callback invoked when the camera tilt motor finishes moving.
+// Notes:
+//  - pfn_callback : guest function pointer (ignored — tilt not implemented).
+//  - pv_context   : opaque context passed to callback (ignored).
+// ---------------------------------------------------------------------------
+dword_result_t XamNuiCameraTiltSetCallback_entry(lpvoid_t pfn_callback,
+                                                 lpvoid_t pv_context) {
+  // We do not implement tilt-motor callbacks; silently succeed so titles
+  // that register a callback don't abort.
+  return X_ERROR_SUCCESS;
+}
+DECLARE_XAM_EXPORT1(XamNuiCameraTiltSetCallback, kNone, kStub);
+
+// ---------------------------------------------------------------------------
+// XamReadBiometricData(user_index, pBuffer, cbBuffer, pcbRead, pOverlapped)
+// Reads biometric (face/voice) enrolment data for a user.
+// Notes:
+//  - Used by Kinect identity enrolment flow.
+//  - We have no biometric backend; return X_E_NO_SUCH_USER so the title
+//    falls back to its unenrolled path.
+// ---------------------------------------------------------------------------
+dword_result_t XamReadBiometricData_entry(
+    dword_t user_index, lpvoid_t p_buffer, dword_t cb_buffer,
+    lpdword_t pcb_read, pointer_t<XAM_OVERLAPPED> overlapped_ptr) {
+  if (pcb_read) {
+    *pcb_read = 0;
+  }
+  if (overlapped_ptr) {
+    kernel_state()->CompleteOverlappedImmediate(overlapped_ptr,
+                                               X_E_NO_SUCH_USER);
+    return X_ERROR_IO_PENDING;
+  }
+  return X_E_NO_SUCH_USER;
+}
+DECLARE_XAM_EXPORT1(XamReadBiometricData, kNone, kStub);
+
 }  // namespace xam
 }  // namespace kernel
 }  // namespace xe
