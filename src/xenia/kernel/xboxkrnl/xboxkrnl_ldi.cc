@@ -8,9 +8,6 @@
  */
 
 // LDI — LZX Decompression Interface (xboxkrnl.exe exports).
-// These wrap the cabinet-format LZX codec used by XContent and XEX loaders.
-// The host-side decompression is already handled by mspack/lzxd; we only
-// need to satisfy import-table resolution for titles that call these directly.
 
 #include "xenia/base/logging.h"
 #include "xenia/kernel/util/shim_utils.h"
@@ -21,6 +18,10 @@ namespace xe {
 namespace kernel {
 namespace xboxkrnl {
 
+// ---------------------------------------------------------------------------
+// LDI — LZX Decompression Interface
+// ---------------------------------------------------------------------------
+
 // LDICreateDecompression(cbDataBlockMax, pvConfiguration, pfnma, pfnmf,
 //                        pcbSrcUsed, phDecompression)
 // Creates an LZX decompression context.
@@ -30,8 +31,6 @@ dword_result_t LDICreateDecompression_entry(dword_t cb_data_block_max,
                                             lpvoid_t pfn_ma, lpvoid_t pfn_mf,
                                             lpdword_t pcb_src_used,
                                             lpdword_t ph_decompression) {
-  // We do not implement the full LZX streaming API; return a benign error
-  // so the caller falls back to its own path or errors cleanly.
   XELOGW("LDICreateDecompression: stub — returning E_NOTIMPL");
   if (ph_decompression) {
     *ph_decompression = 0;
@@ -41,7 +40,6 @@ dword_result_t LDICreateDecompression_entry(dword_t cb_data_block_max,
 DECLARE_XBOXKRNL_EXPORT1(LDICreateDecompression, kNone, kStub);
 
 // LDIDecompress(hDecompression, pbDst, cbDst, pbSrc, pcbSrcUsed)
-// Decompresses one block into pbDst.
 dword_result_t LDIDecompress_entry(dword_t h_decompression, lpvoid_t pb_dst,
                                    dword_t cb_dst, lpvoid_t pb_src,
                                    lpdword_t pcb_src_used) {
@@ -54,9 +52,7 @@ dword_result_t LDIDecompress_entry(dword_t h_decompression, lpvoid_t pb_dst,
 DECLARE_XBOXKRNL_EXPORT1(LDIDecompress, kNone, kStub);
 
 // LDIDestroyDecompression(hDecompression)
-// Frees the decompression context.
 dword_result_t LDIDestroyDecompression_entry(dword_t h_decompression) {
-  // Nothing to free — stub context was never allocated.
   return X_STATUS_SUCCESS;
 }
 DECLARE_XBOXKRNL_EXPORT1(LDIDestroyDecompression, kNone, kStub);
@@ -65,4 +61,3 @@ DECLARE_XBOXKRNL_EXPORT1(LDIDestroyDecompression, kNone, kStub);
 }  // namespace kernel
 }  // namespace xe
 
-DECLARE_XBOXKRNL_EMPTY_REGISTER_EXPORTS(LDI);
