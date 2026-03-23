@@ -60,4 +60,3 @@ DECLARE_XBOXKRNL_EXPORT1(LDIDestroyDecompression, kNone, kStub);
 }  // namespace xboxkrnl
 }  // namespace kernel
 }  // namespace xe
-
