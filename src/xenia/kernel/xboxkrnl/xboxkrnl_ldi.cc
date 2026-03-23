@@ -68,12 +68,9 @@ DECLARE_XBOXKRNL_EXPORT1(LDIDestroyDecompression, kNone, kStub);
 // ---------------------------------------------------------------------------
 
 // PsCamDeviceRequest -- ordinal 0x30D
-dword_result_t PsCamDeviceRequest_entry(dword_t request_code,
-                                        lpvoid_t input_buffer,
-                                        dword_t input_length,
-                                        lpvoid_t output_buffer,
-                                        dword_t output_length,
-                                        lpdword_t bytes_returned) {
+dword_result_t PsCamDeviceRequest_entry(
+    dword_t request_code, lpvoid_t input_buffer, dword_t input_length,
+    lpvoid_t output_buffer, dword_t output_length, lpdword_t bytes_returned) {
   if (bytes_returned) {
     *bytes_returned = 0;
   }
@@ -82,12 +79,9 @@ dword_result_t PsCamDeviceRequest_entry(dword_t request_code,
 DECLARE_XBOXKRNL_EXPORT1(PsCamDeviceRequest, kNone, kStub);
 
 // McaDeviceRequest -- ordinal 0x30E (microphone array)
-dword_result_t McaDeviceRequest_entry(dword_t request_code,
-                                      lpvoid_t input_buffer,
-                                      dword_t input_length,
-                                      lpvoid_t output_buffer,
-                                      dword_t output_length,
-                                      lpdword_t bytes_returned) {
+dword_result_t McaDeviceRequest_entry(
+    dword_t request_code, lpvoid_t input_buffer, dword_t input_length,
+    lpvoid_t output_buffer, dword_t output_length, lpdword_t bytes_returned) {
   if (bytes_returned) {
     *bytes_returned = 0;
   }
@@ -96,12 +90,9 @@ dword_result_t McaDeviceRequest_entry(dword_t request_code,
 DECLARE_XBOXKRNL_EXPORT1(McaDeviceRequest, kNone, kStub);
 
 // DetroitDeviceRequest -- ordinal 0x30F (skeletal processing chip)
-dword_result_t DetroitDeviceRequest_entry(dword_t request_code,
-                                          lpvoid_t input_buffer,
-                                          dword_t input_length,
-                                          lpvoid_t output_buffer,
-                                          dword_t output_length,
-                                          lpdword_t bytes_returned) {
+dword_result_t DetroitDeviceRequest_entry(
+    dword_t request_code, lpvoid_t input_buffer, dword_t input_length,
+    lpvoid_t output_buffer, dword_t output_length, lpdword_t bytes_returned) {
   if (bytes_returned) {
     *bytes_returned = 0;
   }
