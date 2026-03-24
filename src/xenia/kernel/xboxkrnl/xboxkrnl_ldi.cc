@@ -100,6 +100,9 @@ dword_result_t DetroitDeviceRequest_entry(
 }
 DECLARE_XBOXKRNL_EXPORT1(DetroitDeviceRequest, kNone, kStub);
 
+void RegisterLdiExports(xe::cpu::ExportResolver* export_resolver,
+                        xe::kernel::KernelState* kernel_state) {}
+
 }  // namespace xboxkrnl
 }  // namespace kernel
 }  // namespace xe
