@@ -64,9 +64,8 @@ X_HRESULT NuiApp::DispatchMessageSync(uint32_t message, uint32_t buffer_ptr,
       // All other NUI messages: return SUCCESS so the title doesn't abort.
       // These include Identity (0x2Cxxx) and miscellaneous housekeeping
       // messages we haven't yet mapped.
-      XELOGD(
-          "NuiApp: unhandled msg={:08X}, buf={:08X}, len={:08X} -- ACKing",
-          message, buffer_ptr, buffer_length);
+      XELOGD("NuiApp: unhandled msg={:08X}, buf={:08X}, len={:08X} -- ACKing",
+             message, buffer_ptr, buffer_length);
       return X_E_SUCCESS;
     }
   }
