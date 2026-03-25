@@ -48,8 +48,8 @@ X_HRESULT NuiApp::DispatchMessageSync(uint32_t message, uint32_t buffer_ptr,
         return X_E_FAIL;
       }
       if (!driver->is_initialized()) {
-        // NUI_INITIALIZE_FLAG_USES_SKELETON | NUI_INITIALIZE_FLAG_USES_COLOR
-        X_RESULT result = driver->NuiInitialize(0x09);
+        // NUI_INITIALIZE_FLAG_USES_SKELETON
+        X_RESULT result = driver->NuiInitialize(0x08);
         if (result != X_ERROR_SUCCESS) {
           XELOGD("NuiApp: 0x2B004 NuiInitialize failed ({:08X})", result);
           return X_E_FAIL;
