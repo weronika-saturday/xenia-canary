@@ -9,7 +9,6 @@
 
 // LDI -- LZX Decompression Interface (xboxkrnl.exe exports).
 // PsCam/Mca/Detroit -- Kinect device request stubs.
-// Etx -- Extended Telemetry stubs.
 
 #include "xenia/base/logging.h"
 #include "xenia/kernel/util/shim_utils.h"
@@ -89,42 +88,6 @@ dword_result_t DetroitDeviceRequest_entry(
   return X_STATUS_SUCCESS;
 }
 DECLARE_XBOXKRNL_EXPORT1(DetroitDeviceRequest, kNone, kStub);
-
-// ---------------------------------------------------------------------------
-// ETX -- Extended Telemetry (ordinals 0x332-0x337)
-//
-// All parameters are treated as raw dwords to avoid any guest pointer
-// translation that could fault on unexpected input values.
-// ---------------------------------------------------------------------------
-
-// EtxProducerRegister -- ordinal 0x334
-dword_result_t EtxProducerRegister_entry(dword_t name_ptr, dword_t flags,
-                                         lpdword_t ph_producer) {
-  if (ph_producer) {
-    *ph_producer = 0x45545800u;  // dummy handle 'ETX\0'
-  }
-  return X_STATUS_SUCCESS;
-}
-DECLARE_XBOXKRNL_EXPORT1(EtxProducerRegister, kNone, kStub);
-
-// EtxProducerUnregister -- ordinal 0x335
-dword_result_t EtxProducerUnregister_entry(dword_t h_producer) {
-  return X_STATUS_SUCCESS;
-}
-DECLARE_XBOXKRNL_EXPORT1(EtxProducerUnregister, kNone, kStub);
-
-// EtxProducerLog -- ordinal 0x332
-dword_result_t EtxProducerLog_entry(dword_t h_producer, dword_t event_id,
-                                    dword_t flags) {
-  return X_STATUS_SUCCESS;
-}
-DECLARE_XBOXKRNL_EXPORT1(EtxProducerLog, kNone, kStub);
-
-// EtxProducerLogXwpp -- ordinal 0x337
-dword_result_t EtxProducerLogXwpp_entry(dword_t h_producer) {
-  return X_STATUS_SUCCESS;
-}
-DECLARE_XBOXKRNL_EXPORT2(EtxProducerLogXwpp, kNone, kStub, kHighFrequency);
 
 void RegisterLdiExports(xe::cpu::ExportResolver* export_resolver,
                         KernelState* kernel_state) {}
