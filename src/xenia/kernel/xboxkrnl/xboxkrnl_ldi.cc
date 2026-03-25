@@ -93,30 +93,34 @@ DECLARE_XBOXKRNL_EXPORT1(DetroitDeviceRequest, kNone, kStub);
 // ---------------------------------------------------------------------------
 // ETX -- Extended Telemetry (ordinals 0x332-0x337)
 //
-// Called during NUI initialisation. Returning SUCCESS allows init to
-// continue past these telemetry hooks.
+// All parameters are treated as raw dwords to avoid any guest pointer
+// translation that could fault on unexpected input values.
 // ---------------------------------------------------------------------------
 
-dword_result_t EtxProducerRegister_entry(lpstring_t psz_name, dword_t dw_flags,
+// EtxProducerRegister -- ordinal 0x334
+dword_result_t EtxProducerRegister_entry(dword_t name_ptr, dword_t flags,
                                          lpdword_t ph_producer) {
   if (ph_producer) {
-    *ph_producer = 0x45545800u;  // dummy handle
+    *ph_producer = 0x45545800u;  // dummy handle 'ETX\0'
   }
   return X_STATUS_SUCCESS;
 }
 DECLARE_XBOXKRNL_EXPORT1(EtxProducerRegister, kNone, kStub);
 
+// EtxProducerUnregister -- ordinal 0x335
 dword_result_t EtxProducerUnregister_entry(dword_t h_producer) {
   return X_STATUS_SUCCESS;
 }
 DECLARE_XBOXKRNL_EXPORT1(EtxProducerUnregister, kNone, kStub);
 
+// EtxProducerLog -- ordinal 0x332
 dword_result_t EtxProducerLog_entry(dword_t h_producer, dword_t event_id,
                                     dword_t flags) {
   return X_STATUS_SUCCESS;
 }
 DECLARE_XBOXKRNL_EXPORT1(EtxProducerLog, kNone, kStub);
 
+// EtxProducerLogXwpp -- ordinal 0x337
 dword_result_t EtxProducerLogXwpp_entry(dword_t h_producer) {
   return X_STATUS_SUCCESS;
 }
