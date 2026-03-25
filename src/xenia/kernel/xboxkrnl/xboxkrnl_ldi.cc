@@ -8,7 +8,8 @@
  */
 
 // LDI -- LZX Decompression Interface (xboxkrnl.exe exports).
-// PsCam/Mca/Detroit -- device request stubs for Kinect and related hardware.
+// PsCam/Mca/Detroit -- Kinect device request stubs.
+// Etx -- Extended Telemetry stubs.
 
 #include "xenia/base/logging.h"
 #include "xenia/kernel/util/shim_utils.h"
@@ -23,8 +24,6 @@ namespace xboxkrnl {
 // LDI -- LZX Decompression Interface
 // ---------------------------------------------------------------------------
 
-// LDICreateDecompression(cbDataBlockMax, pvConfiguration, pfnma, pfnmf,
-//                        pcbSrcUsed, phDecompression)
 dword_result_t LDICreateDecompression_entry(dword_t cb_data_block_max,
                                             lpvoid_t pv_configuration,
                                             lpvoid_t pfn_ma, lpvoid_t pfn_mf,
@@ -38,7 +37,6 @@ dword_result_t LDICreateDecompression_entry(dword_t cb_data_block_max,
 }
 DECLARE_XBOXKRNL_EXPORT1(LDICreateDecompression, kNone, kStub);
 
-// LDIDecompress(hDecompression, pbDst, cbDst, pbSrc, pcbSrcUsed)
 dword_result_t LDIDecompress_entry(dword_t h_decompression, lpvoid_t pb_dst,
                                    dword_t cb_dst, lpvoid_t pb_src,
                                    lpdword_t pcb_src_used) {
@@ -50,58 +48,82 @@ dword_result_t LDIDecompress_entry(dword_t h_decompression, lpvoid_t pb_dst,
 }
 DECLARE_XBOXKRNL_EXPORT1(LDIDecompress, kNone, kStub);
 
-// LDIDestroyDecompression(hDecompression)
 dword_result_t LDIDestroyDecompression_entry(dword_t h_decompression) {
   return X_STATUS_SUCCESS;
 }
 DECLARE_XBOXKRNL_EXPORT1(LDIDestroyDecompression, kNone, kStub);
 
 // ---------------------------------------------------------------------------
-// PsCam / Mca / Detroit -- device request interfaces (ordinals 0x30D-0x30F)
+// PsCam / Mca / Detroit -- Kinect device request interfaces
 //
-// PsCamDeviceRequest is called by Kinect Joy Ride during NUI init to open
-// the camera sensor. Without a stub the init thread crashes immediately via
-// undefined extern and the game never enables the Kinect cursor.
-//
-// Returning X_STATUS_NOT_SUPPORTED causes the Kinect runtime to disable
-// hardware access cleanly instead of crashing.
+// PsCamDeviceRequest is called with request_code=0 to open the camera.
+// Returning SUCCESS allows NUI initialisation to continue.
 // ---------------------------------------------------------------------------
 
-// PsCamDeviceRequest -- ordinal 0x30D
 dword_result_t PsCamDeviceRequest_entry(
     dword_t request_code, lpvoid_t input_buffer, dword_t input_length,
     lpvoid_t output_buffer, dword_t output_length, lpdword_t bytes_returned) {
   if (bytes_returned) {
     *bytes_returned = 0;
   }
-  return X_STATUS_NOT_SUPPORTED;
+  return X_STATUS_SUCCESS;
 }
 DECLARE_XBOXKRNL_EXPORT1(PsCamDeviceRequest, kNone, kStub);
 
-// McaDeviceRequest -- ordinal 0x30E (microphone array)
 dword_result_t McaDeviceRequest_entry(
     dword_t request_code, lpvoid_t input_buffer, dword_t input_length,
     lpvoid_t output_buffer, dword_t output_length, lpdword_t bytes_returned) {
   if (bytes_returned) {
     *bytes_returned = 0;
   }
-  return X_STATUS_NOT_SUPPORTED;
+  return X_STATUS_SUCCESS;
 }
 DECLARE_XBOXKRNL_EXPORT1(McaDeviceRequest, kNone, kStub);
 
-// DetroitDeviceRequest -- ordinal 0x30F (skeletal processing chip)
 dword_result_t DetroitDeviceRequest_entry(
     dword_t request_code, lpvoid_t input_buffer, dword_t input_length,
     lpvoid_t output_buffer, dword_t output_length, lpdword_t bytes_returned) {
   if (bytes_returned) {
     *bytes_returned = 0;
   }
-  return X_STATUS_NOT_SUPPORTED;
+  return X_STATUS_SUCCESS;
 }
 DECLARE_XBOXKRNL_EXPORT1(DetroitDeviceRequest, kNone, kStub);
 
+// ---------------------------------------------------------------------------
+// ETX -- Extended Telemetry (ordinals 0x332-0x337)
+//
+// Called during NUI initialisation. Returning SUCCESS allows init to
+// continue past these telemetry hooks.
+// ---------------------------------------------------------------------------
+
+dword_result_t EtxProducerRegister_entry(lpstring_t psz_name, dword_t dw_flags,
+                                         lpdword_t ph_producer) {
+  if (ph_producer) {
+    *ph_producer = 0x45545800u;  // dummy handle
+  }
+  return X_STATUS_SUCCESS;
+}
+DECLARE_XBOXKRNL_EXPORT1(EtxProducerRegister, kNone, kStub);
+
+dword_result_t EtxProducerUnregister_entry(dword_t h_producer) {
+  return X_STATUS_SUCCESS;
+}
+DECLARE_XBOXKRNL_EXPORT1(EtxProducerUnregister, kNone, kStub);
+
+dword_result_t EtxProducerLog_entry(dword_t h_producer, dword_t event_id,
+                                    dword_t flags) {
+  return X_STATUS_SUCCESS;
+}
+DECLARE_XBOXKRNL_EXPORT1(EtxProducerLog, kNone, kStub);
+
+dword_result_t EtxProducerLogXwpp_entry(dword_t h_producer) {
+  return X_STATUS_SUCCESS;
+}
+DECLARE_XBOXKRNL_EXPORT2(EtxProducerLogXwpp, kNone, kStub, kHighFrequency);
+
 void RegisterLdiExports(xe::cpu::ExportResolver* export_resolver,
-                        xe::kernel::KernelState* kernel_state) {}
+                        KernelState* kernel_state) {}
 
 }  // namespace xboxkrnl
 }  // namespace kernel
